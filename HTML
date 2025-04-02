@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Form</title>
+</head>
+<body>
+
+    <h2>Invoice Details</h2>
+    
+    <label for="csts_customername">Customer Name:</label>
+    <input type="text" id="csts_customername" disabled>
+
+    <br><br>
+
+    <label for="csts_invoice">Invoice Details:</label>
+    <input type="text" id="csts_invoice" disabled>
+
+    <br><br>
+
+    <button id="updateButton">Fetch Invoice</button>
+
+    <script src="csts_new_invoiceLoader.js"></script>
+
+<script>
+    document.getElementById("updateButton").addEventListener("click", function() {
+        var recordId;
+
+        // Detect if running inside PowerApps (Dataverse)
+        if (window.parent.Xrm && window.parent.Xrm.Page && window.parent.Xrm.Page.data) {
+            recordId = window.parent.Xrm.Page.data.entity.getId(); // Get real Record ID from PowerApps
+        } else {
+            console.warn("PowerApps environment not detected. Using test Record ID.");
+            recordId = '4D69AE7D-0F0C-F011-BAE2-6045BD62258D'; // Fallback for testing
+        }
+
+        if (!recordId) {
+            console.error("Error: Record ID not found.");
+            return;
+        }
+
+        // Remove curly braces from ID if present
+        recordId = recordId.replace(/[{}]/g, "");
+
+        console.log("Using Record ID:", recordId);
+
+        // Simulate PowerApps execution context
+        var executionContext = {
+            getFormContext: function() {
+                return {
+                    data: { 
+                        entity: { 
+                            getId: function() { return recordId; } 
+                        } 
+                    },
+                    getAttribute: function(attribute) {
+                        return {
+                            setValue: function(value) {
+                                document.getElementById(attribute).value = value;
+                                console.log(attribute + " updated:", value);
+                            },
+                            fireOnChange: function() {}
+                        };
+                    }
+                };
+            }
+        };
+
+        // Call onLoad function with dynamic record ID
+        onLoad(executionContext);
+    });
+</script>
+
+</body>
+</html>
