@@ -1,0 +1,96 @@
+// Declare a global object to store fetched data
+var fetchedData = {};
+
+// Function to be triggered on form load
+function onLoad(executionContext) {
+    console.log("onLoad function executed.");
+
+    var formContext = executionContext.getFormContext();
+    var recordId = formContext.data.entity.getId(); // Get record ID dynamically
+
+    if (!recordId) {
+        console.error("Error: Record ID not found.");
+        return;
+    }
+
+    recordId = recordId.replace(/[{}]/g, ""); // Remove curly braces from Record ID
+
+    console.log("Record ID:", recordId);
+    fetchInvoiceData(recordId, formContext);
+}
+
+// Function to fetch invoice data from Dataverse API
+function fetchInvoiceData(recordId, formContext) {
+    console.log("Fetching data for Record ID:", recordId);
+
+    // Ensure table name is correct in Dataverse
+    var query = `https://orgeddc73a8.crm3.dynamics.com/api/data/v9.0/csts_invoices(${recordId})?$select=csts_customername,csts_invoice`;
+
+    fetch(query, {
+        method: "GET",
+        headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "OData-Version": "4.0"
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP Error! Status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log("Data fetched successfully:", data);
+
+        if (data && data.csts_customername && data.csts_invoice) {
+            // Store fetched data
+            fetchedData = { 
+                csts_customername: data.csts_customername,
+                csts_invoice: data.csts_invoice
+            };
+            console.log("Fetched data stored:", fetchedData);
+
+            // Update fields in PowerApps form
+            updateFields(formContext);
+        } else {
+            console.error("Error: Invalid data received from API.");
+        }
+    })
+    .catch(error => {
+        console.error("Error fetching data:", error);
+    });
+}
+
+// Function to update fields in PowerApps form
+function updateFields(formContext) {
+    console.log("Updating fields with fetched data:", fetchedData);
+
+    if (!fetchedData || Object.keys(fetchedData).length === 0) {
+        console.error("Error: Missing data to update fields.");
+        return;
+    }
+
+    // Set values in the form
+    var customerNameField = formContext.getAttribute("csts_customername");
+    var invoiceDetailsField = formContext.getAttribute("csts_invoice");
+
+    if (customerNameField) {
+        customerNameField.setValue(fetchedData.csts_customername);
+        customerNameField.fireOnChange();
+        console.log("Customer Name updated:", fetchedData.csts_customername);
+    } else {
+        console.error("Error: Customer Name field not found.");
+    }
+
+    if (invoiceDetailsField) {
+        invoiceDetailsField.setValue(fetchedData.csts_invoice);
+        invoiceDetailsField.fireOnChange();
+        console.log("Invoice updated:", fetchedData.csts_invoice);
+    } else {
+        console.error("Error: Invoice field not found.");
+    }
+}
+
+// Register `onLoad` globally so PowerApps can find it
+window.onLoad = onLoad;
